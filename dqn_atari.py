@@ -6,7 +6,14 @@ import gym
 
 class DQNAgent:
     def __init__(self):
+        self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
+        self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
 
+        self.conv1 = tf.contrib.layers.conv2d()
+        self.conv2 = tf.contrib.layers.conv2d()
+        self.output = tf.contrib.layers.fully_connected()
+
+        
 
 
 from collections import deque
