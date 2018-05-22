@@ -39,7 +39,44 @@ class ReplayBuffer:
         return [self.buffer[i] for i in r_idx]
 
 
+buffer_size = 10000
+batch_size = 28
 
+n_episodes = 1000
+max_steps = 200
+gamma = 0.99
+
+learning_rate = 0.0001
+hidden_size = 64
+
+explore_start = 1.0
+explore_stop = 0.01
+decay_rate = 0.0001
 
 
 env = gym.make('Acrobot-v1')
+env.reset()
+r_act = env.step(env.action_space.sample())
+
+replay_buffer = ReplayBuffer(buffer_size, batch_size)
+
+state, reward, done, _ = env.step(r_act)
+
+for ex in range(batch_size):
+    action = r_act
+    next_state, reward, done, _ = env.step(action)
+
+    if done:
+        next_state = tf.zeros(state.shape[0])
+        exp = (state, action, reward, next_state)
+        replay_buffer.add_exp(exp)
+
+        env.reset()
+        state, reward, done, _ = env.step(r_act)
+    else:
+        exp = (state, action, reward, next_state)
+        replay_buffer.add_exp(exp)
+        state = next_state
+
+tf.reset_default_graph()
+dqn = DQNAgent(learning_rate, hidden_size=n_hidden_layer)
