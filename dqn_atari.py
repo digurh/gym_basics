@@ -8,14 +8,14 @@ class DQNAgent:
     def __init__(self, learning_rate=0.0001, state_size=6, action_size=3,
                  hidden_size=32):
         self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
-        self.actions = tf.placeholder(tf.int32, [None])
+        self.actions = tf.placeholder(tf.int32, [None], name='actions')
         one_hot_actions = tf.one_hot(self.actions, action_size)
         self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
 
         self.fc1 = tf.contrib.layers.fully_connected(self.inputs, hidden_size)
         self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
         self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
-                                                        activation=None)
+                                                        activation_fn=None)
 
         self.Q = tf.reduce_sum(tf.multiply(self.output, one_hot_actions), axis=1)
         self.loss = tf.reduce_mean(tf.square(self.targetQs - self.Q))
@@ -33,7 +33,7 @@ class ReplayBuffer:
         self.buffer.append(experience)
 
     def sample(self):
-        r_idx = np.random.choice(np.arange(len(buffer)),
+        r_idx = np.random.choice(np.arange(len(self.buffer)),
                                  size=self.batch_size,
                                  replace=False)
         return [self.buffer[i] for i in r_idx]
@@ -43,7 +43,7 @@ buffer_size = 10000
 batch_size = 28
 
 n_episodes = 1000
-max_steps = 200
+max_steps = 500
 gamma = 0.99
 
 learning_rate = 0.0001
@@ -67,7 +67,7 @@ for ex in range(batch_size):
     next_state, reward, done, _ = env.step(action)
 
     if done:
-        next_state = tf.zeros(state.shape)
+        next_state = np.zeros(state.shape)
         exp = (state, action, reward, next_state)
         replay_buffer.add_exp(exp)
 
@@ -79,12 +79,12 @@ for ex in range(batch_size):
         state = next_state
 
 tf.reset_default_graph()
-dqn = DQNAgent(learning_rate, hidden_size=n_hidden_layer)
+dqn = DQNAgent(learning_rate, hidden_size=hidden_size)
 
 rewards_list = []
 
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer)
+    sess.run(tf.global_variables_initializer())
     step = 0
 
     for episode in range(1, n_episodes+1):
@@ -95,17 +95,17 @@ with tf.Session() as sess:
             env.render()
 
             explore_p = explore_stop + (explore_start-explore_stop)*np.exp(-decay_rate*step)
-            if np.rand < explore_p:
+            if np.random.rand() < explore_p:
                 action = r_act
             else:
-                Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, state.shape))})
+                Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, *state.shape))})
                 action = np.argmax(Qs)
 
             next_state, reward, done, _ = env.step(action)
             total_reward += reward
 
             if done:
-                next_state = tf.zeros(state.shape)
+                next_state = np`.zeros(state.shape)
                 exp = (state, action, reward, next_state)
                 replay_buffer.add_exp(exp)
                 rewards_list.append((episode, total_reward))
@@ -137,9 +137,9 @@ with tf.Session() as sess:
 
             targets = rewards + gamma * np.max(target_Qs, axis=1)
 
-            loss, _ = sess.run([less, opt], feed_dict={dqn.inputs: states,
-                                                       dqn.targetQs: targets,
-                                                       dqn.actions: actions})
+            loss, _ = sess.run([dqn.loss, dqn.opt], feed_dict={dqn.inputs: states,
+                                                               dqn.targetQs: targets,
+                                                               dqn.actions: actions})
 
 import matplotlib.pyplot as plt
 
