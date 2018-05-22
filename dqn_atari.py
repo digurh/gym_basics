@@ -100,4 +100,34 @@ with tf.Session() as sess:
                 Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, state.shape[0]))})
                 action = np.argmax(Qs)
 
+            next_state, reward, done, _ = env.step(action)
+            total_reward += reward
+
+            if done:
+                next_state = tf.zeros(state.shape[0])
+                exp = (state, action, reward, next_state)
+                replay_buffer.add_exp(exp)
+                rewards_list.append((episode, total_reward))
+
+                print('Episode: {}'.format(episode),
+                      'Total reward: {}'.format(total_reward),
+                      'Training loss: {:.4f}'.format(loss),
+                      'Explore P: {:.4f}'.format(explore_p))
+
+                t = max_steps
+
+                env.reset()
+                state, reward, done, _ = env.step(r_act)
+            else:
+                exp = (state, action, reward, next_state)
+                replay_buffer.add_exp(exp)
+                t += 1
+                state = next_state
+
+            batch = replay_buffer.sample()
+            states = np.array([ex[0] for ex in batch])
+            actions = np.array([ex[1] for ex in batch])
+            rewards = np.array([ex[2] for ex in batch])
+            next_states = np.array([ex[3] for ex in batch])
+
             
