@@ -7,7 +7,7 @@ import gym
 class DQNAgent:
     def __init__(self, learning_rate=0.0001, state_size=6, action_size=3,
                  hidden_size=32):
-        self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs
+        self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
         self.actions = tf.placeholder(tf.int32, [None])
         one_hot_actions = tf.one_hot(self.actions, action_size)
         self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
@@ -92,6 +92,7 @@ with tf.Session() as sess:
         t = 0
         while t < max_steps:
             step += 1
+            env.render()
 
             explore_p = explore_stop + (explore_start-explore_stop)*np.exp(-decay_rate*step)
             if np.rand < explore_p:
