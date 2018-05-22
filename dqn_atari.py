@@ -67,7 +67,7 @@ for ex in range(batch_size):
     next_state, reward, done, _ = env.step(action)
 
     if done:
-        next_state = tf.zeros(state.shape[0])
+        next_state = tf.zeros(state.shape)
         exp = (state, action, reward, next_state)
         replay_buffer.add_exp(exp)
 
@@ -97,14 +97,14 @@ with tf.Session() as sess:
             if np.rand < explore_p:
                 action = r_act
             else:
-                Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, state.shape[0]))})
+                Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, state.shape))})
                 action = np.argmax(Qs)
 
             next_state, reward, done, _ = env.step(action)
             total_reward += reward
 
             if done:
-                next_state = tf.zeros(state.shape[0])
+                next_state = tf.zeros(state.shape)
                 exp = (state, action, reward, next_state)
                 replay_buffer.add_exp(exp)
                 rewards_list.append((episode, total_reward))
@@ -130,4 +130,25 @@ with tf.Session() as sess:
             rewards = np.array([ex[2] for ex in batch])
             next_states = np.array([ex[3] for ex in batch])
 
-            
+            target_Qs = sess.run(dqn.output, feed_dict={dqn.inputs: next_states})
+            episode_ends = (next_states == np.zeros(states[0].shape)).all(axis=1)
+            target_Qs[episode_ends] = (0, 0, 0)
+
+            targets = rewards + gamma * np.max(target_Qs, axis=1)
+
+            loss, _ = sess.run([less, opt], feed_dict={dqn.inputs: states,
+                                                       dqn.targetQs: targets,
+                                                       dqn.actions: actions})
+
+import matplotlib.pyplot as plt
+
+def running_mean(x, N):
+    cumsum = np.cumsum(np.insert(x, 0, 0))
+    return (cumsum[N:] - cumsum[:-N]) / N
+
+eps, rews = np.array(rewards_list).T
+smoothed_rews = running_mean(rews, 10)
+plt.plot(eps[-len(smoothed_rews):], smoothed_rews)
+plt.plot(eps, rews, color='grey', alpha=0.3)
+plt.xlabel('Episode')
+plt.ylabel('Total Reward')
