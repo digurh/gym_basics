@@ -56,7 +56,7 @@ decay_rate = 0.0001
 
 env = gym.make('Acrobot-v1')
 env.reset()
-r_act = env.step(env.action_space.sample())
+r_act = env.action_space.sample()
 
 replay_buffer = ReplayBuffer(buffer_size, batch_size)
 
@@ -80,3 +80,24 @@ for ex in range(batch_size):
 
 tf.reset_default_graph()
 dqn = DQNAgent(learning_rate, hidden_size=n_hidden_layer)
+
+rewards_list = []
+
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer)
+    step = 0
+
+    for episode in range(1, n_episodes+1):
+        total_reward = 0
+        t = 0
+        while t < max_steps:
+            step += 1
+
+            explore_p = explore_stop + (explore_start-explore_stop)*np.exp(-decay_rate*step)
+            if np.rand < explore_p:
+                action = r_act
+            else:
+                Qs = sess.run(dqn.output, feed_dict={dqn.inputs: state.reshape((1, state.shape[0]))})
+                action = np.argmax(Qs)
+
+            
