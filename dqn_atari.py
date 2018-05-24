@@ -38,6 +38,30 @@ class ReplayBuffer:
                                  replace=False)
         return [self.buffer[i] for i in r_idx]
 
+# custom heap to allow prioritized stochastic sampling of experiences
+class PrioritizedReplay:
+    def __init__(self, buffer_size=10000, batch_size=28):
+        self.replay = [None]
+        self.max_size = buffer_size
+        self.batch_size = batch_size
+        self.n_exp = 0
+
+    def push_exp(self, experience):
+        self.replay.append(experience)
+        self.n_exp += 1
+
+        if self.replay[self.n_exp][0] > self.replay[self.n_exp/2][0]:
+            tmp = self.replay[self.n_exp/2]
+            self.replay[self.n_exp/2] = self.replay[self.n_exp]
+            self.replay[self.n_exp] = tmp
+
+        if self.n_exp > self.max_size:
+            self.replay = self.replay[:-1]
+
+    def sample(self):
+        
+
+
 
 buffer_size = 10000
 batch_size = 28
@@ -51,7 +75,7 @@ hidden_size = 64
 
 explore_start = 1.0
 explore_stop = 0.01
-decay_rate = 0.0001
+decay_rate = 0.00003
 
 
 env = gym.make('Acrobot-v1')
@@ -92,7 +116,7 @@ with tf.Session() as sess:
         t = 0
         while t < max_steps:
             step += 1
-            env.render()
+            # env.render()
 
             explore_p = explore_stop + (explore_start-explore_stop)*np.exp(-decay_rate*step)
             if np.random.rand() < explore_p:
@@ -105,7 +129,7 @@ with tf.Session() as sess:
             total_reward += reward
 
             if done:
-                next_state = np`.zeros(state.shape)
+                next_state = np.zeros(state.shape)
                 exp = (state, action, reward, next_state)
                 replay_buffer.add_exp(exp)
                 rewards_list.append((episode, total_reward))
@@ -153,3 +177,4 @@ plt.plot(eps[-len(smoothed_rews):], smoothed_rews)
 plt.plot(eps, rews, color='grey', alpha=0.3)
 plt.xlabel('Episode')
 plt.ylabel('Total Reward')
+plt.show()
