@@ -57,7 +57,9 @@ class PrioritizedReplay:
             self.replay = self.replay[:-1]
 
     def sample(self):
-
+        step = self.n_exp/self.batch_size
+        rnd = self.rand_index(step)
+        return [self.replay[i*step+rnd] for i in range(self.batch_size)]
 
     def heapify(self, ind):
         tmp = self.replay[self.n_exp/2]
@@ -67,6 +69,9 @@ class PrioritizedReplay:
 
         if ind >= 2 and self.replay[ind][0] > self.replay[ind/2][0]:
             self.heapify(ind)
+
+    def rand_index(self, step):
+        return numpy.random.choice(step)
 
 
 buffer_size = 10000
