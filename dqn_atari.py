@@ -51,16 +51,22 @@ class PrioritizedReplay:
         self.n_exp += 1
 
         if self.replay[self.n_exp][0] > self.replay[self.n_exp/2][0]:
-            tmp = self.replay[self.n_exp/2]
-            self.replay[self.n_exp/2] = self.replay[self.n_exp]
-            self.replay[self.n_exp] = tmp
+            self.heapify(self.n_exp)
 
         if self.n_exp > self.max_size:
             self.replay = self.replay[:-1]
 
     def sample(self):
-        
 
+
+    def heapify(self, ind):
+        tmp = self.replay[self.n_exp/2]
+        self.replay[self.n_exp/2] = self.replay[self.n_exp]
+        self.replay[self.n_exp] = tmp
+        ind = ind/2
+
+        if ind >= 2 and self.replay[ind][0] > self.replay[ind/2][0]:
+            self.heapify(ind)
 
 
 buffer_size = 10000
