@@ -20,10 +20,16 @@ class DQNAgent:
         one_hot_actions = tf.one_hot(self.actions, action_size)
         self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
 
-        self.fc1 = tf.contrib.layers.fully_connected(self.inputs, hidden_size)
-        self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
-        self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
-                                                        activation_fn=None)
+        self.l1_logits = tf.matmul(self.inputs, self.weights['1']) + self.bias['1']
+        self.l1_activations = self.relu(self.l1_logits)
+        self.l2_logits = tf.matmul(self.l1_activations, self.weights['2']) + self.bias['2']
+        self.l2_activations = self.relu(self.l2_logits)
+        self.output = tf.matmul(self.l2_activations, self.weights['3']) + self.bias['3']
+
+        # self.fc1 = tf.contrib.layers.fully_connected(self.inputs, hidden_size)
+        # self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
+        # self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
+        #                                                 activation_fn=None)
 
         self.Q = tf.reduce_sum(tf.multiply(self.output, one_hot_actions), axis=1)
         self.loss = tf.reduce_mean(tf.square(self.targetQs - self.Q))
