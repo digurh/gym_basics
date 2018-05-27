@@ -9,6 +9,9 @@ class DQNAgent:
                  hidden_size=32):
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # xavier initialization ensure weights maintain zero mean and 1/N variance,
+            # where N is the number of input neurons
+            # xavier initialization helps to avoid vanishing or exploding gradients
             initializer = tf.contrib.layers.xavier_initializer()
             self.weights = {'1': tf.Variable(initializer([state_size, hidden_size])),
                             '2': tf.Variable(initializer([hidden_size, hidden_size])),
