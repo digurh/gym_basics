@@ -7,6 +7,14 @@ import gym
 class DQNAgent:
     def __init__(self, learning_rate=0.0001, state_size=6, action_size=3,
                  hidden_size=32):
+        self.weights = {'1': tf.Variable(tf.truncated_normal([state_size, hidden_size])),
+                        '2': tf.Variable(tf.truncated_normal([hidden_size, hidden_size])),
+                        '3': tf.Variable(tf.truncated_normal([hidden_size, action_size]))}
+        self.bias = {'1': tf.Variable(tf.zeros([hidden_size])),
+                     '2': tf.Variable(tf.zeros([hidden_size])),
+                     '3': tf.Variable(tf.zeros([action_size]))}
+
+
         self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
         self.actions = tf.placeholder(tf.int32, [None], name='actions')
         one_hot_actions = tf.one_hot(self.actions, action_size)
@@ -20,6 +28,9 @@ class DQNAgent:
         self.Q = tf.reduce_sum(tf.multiply(self.output, one_hot_actions), axis=1)
         self.loss = tf.reduce_mean(tf.square(self.targetQs - self.Q))
         self.opt = tf.train.RMSPropOptimizer(learning_rate).minimize(self.loss)
+
+        def relu(self, X):
+            return tf.maximum(X, 0)
 
 
 from collections import deque
