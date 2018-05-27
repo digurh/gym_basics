@@ -7,36 +7,33 @@ import gym
 class DQNAgent:
     def __init__(self, learning_rate=0.0001, state_size=6, action_size=3,
                  hidden_size=32):
-        self.weights = {'1': tf.Variable(tf.truncated_normal([state_size, hidden_size])),
-                        '2': tf.Variable(tf.truncated_normal([hidden_size, hidden_size])),
-                        '3': tf.Variable(tf.truncated_normal([hidden_size, action_size]))}
-        self.bias = {'1': tf.Variable(tf.zeros([hidden_size])),
-                     '2': tf.Variable(tf.zeros([hidden_size])),
-                     '3': tf.Variable(tf.zeros([action_size]))}
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            initializer = tf.contrib.layers.xavier_initializer()
+            self.weights = {'1': tf.Variable(initializer([state_size, hidden_size])),
+                            '2': tf.Variable(initializer([hidden_size, hidden_size])),
+                            '3': tf.Variable(initializer([hidden_size, action_size]))}
+            self.bias = {'1': tf.Variable(tf.zeros([hidden_size])),
+                        '2': tf.Variable(tf.zeros([hidden_size])),
+                        '3': tf.Variable(tf.zeros([action_size]))}
 
+            self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
+            self.actions = tf.placeholder(tf.int32, [None], name='actions')
+            one_hot_actions = tf.one_hot(self.actions, action_size)
+            self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
 
-        self.inputs = tf.placeholder(tf.float32, [None, state_size], name='inputs')
-        self.actions = tf.placeholder(tf.int32, [None], name='actions')
-        one_hot_actions = tf.one_hot(self.actions, action_size)
-        self.targetQs = tf.placeholder(tf.float32, [None], name='targetQs')
+            self.l1_logits = tf.matmul(self.inputs, self.weights['1']) + self.bias['1']
+            self.l1_activations = tf.nn.relu(self.l1_logits)     #self.relu(self.l1_logits)
+            self.l2_logits = tf.matmul(self.l1_activations, self.weights['2']) + self.bias['2']
+            self.l2_activations = tf.nn.relu(self.l2_logits)     #self.relu(self.l2_logits)
+            self.output = tf.matmul(self.l2_activations, self.weights['3']) + self.bias['3']
 
-        self.l1_logits = tf.matmul(self.inputs, self.weights['1']) + self.bias['1']
-        self.l1_activations = self.relu(self.l1_logits)
-        self.l2_logits = tf.matmul(self.l1_activations, self.weights['2']) + self.bias['2']
-        self.l2_activations = self.relu(self.l2_logits)
-        self.output = tf.matmul(self.l2_activations, self.weights['3']) + self.bias['3']
+            self.Q = tf.reduce_sum(tf.multiply(self.output, one_hot_actions), axis=1)
+            self.loss = tf.reduce_mean(tf.square(self.targetQs - self.Q))
+            self.opt = tf.train.RMSPropOptimizer(learning_rate).minimize(self.loss)
 
-        # self.fc1 = tf.contrib.layers.fully_connected(self.inputs, hidden_size)
-        # self.fc2 = tf.contrib.layers.fully_connected(self.fc1, hidden_size)
-        # self.output = tf.contrib.layers.fully_connected(self.fc2, action_size,
-        #                                                 activation_fn=None)
-
-        self.Q = tf.reduce_sum(tf.multiply(self.output, one_hot_actions), axis=1)
-        self.loss = tf.reduce_mean(tf.square(self.targetQs - self.Q))
-        self.opt = tf.train.RMSPropOptimizer(learning_rate).minimize(self.loss)
-
-        def relu(self, X):
-            return tf.maximum(X, 0)
+    def relu(self, X):
+        return tf.maximum(X, 0)
 
 
 from collections import deque
@@ -136,7 +133,7 @@ dqn = DQNAgent(learning_rate, hidden_size=hidden_size)
 
 rewards_list = []
 
-with tf.Session() as sess:
+with tf.Session(graph=dqn.graph) as sess:
     sess.run(tf.global_variables_initializer())
     step = 0
 
