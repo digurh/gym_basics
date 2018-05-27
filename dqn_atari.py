@@ -56,6 +56,7 @@ class PrioritizedReplay:
         if self.n_exp > self.max_size:
             self.replay = self.replay[:-1]
 
+    # consider sampling explicitly by 1/rank
     def sample(self):
         step = self.n_exp/self.batch_size
         rnd = self.rand_index(step)
