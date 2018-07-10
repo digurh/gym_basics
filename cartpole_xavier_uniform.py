@@ -65,7 +65,9 @@ class Policy(nn.Module):
         return F.relu(X)
 
 def lr_decay(opt, ep, lr_init):
-    lr = lr_init * (0.55 ** (ep // 500))
+    # lr = lr_init * (0.55 ** (ep // 500))
+    alpha = (1 - (ep/1000))
+    lr = (lr_init * alpha) + (0.001 * alpha)
     for param_group in opt.param_groups:
         param_group['lr'] = lr
 
@@ -118,7 +120,8 @@ def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lea
         if np.mean(scores_deque)>=195.0 and solved is '':
             solved = 'Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(episode-100, np.mean(scores_deque))
 
-        lr_decay(opt, episode, lr_init)
+        if episode >= 200:
+            lr_decay(opt, episode, lr_init)
 
     return scores, solved
 
@@ -132,7 +135,7 @@ max_t = 1000
 gamma = 1.0
 print_every = 100
 
-learning_rate = 0.01
+learning_rate = 0.025
 
 
 r_net = Policy(n_hidden_units, state_size, action_size).to(device)
