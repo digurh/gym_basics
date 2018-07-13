@@ -16,8 +16,8 @@ torch.manual_seed(0)
 env = gym.make('MountainCar-v0')
 env.seed(1)
 
-# print(env.observation_space)
-# print(env.action_space)
+print(env.observation_space)
+print(env.action_space)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -31,12 +31,12 @@ class Policy(nn.Module):
                                            [self.bias[b] for b in self.bias.keys()])
 
     def forward(self, state):
-        l1 = torch.mm(state, self.weights['1']) + self.bias['1']
-        l1 = self.relu(l1)
-        l2 = torch.mm(l1, self.weights['2']) + self.bias['2']
-        # l2 = self.relu(l2)
-        # l3 = torch.mm(l2, self.weights['3']) + self.bias['3']
-        return F.softmax(l2, dim=1)
+        X = torch.mm(state, self.weights['1']) + self.bias['1']
+        X = self.relu(X)
+        X = torch.mm(X, self.weights['2']) + self.bias['2']
+        X = self.relu(X)
+        X = torch.mm(X, self.weights['3']) + self.bias['3']
+        return F.softmax(X, dim=1)
 
     # turn state into torch usable tensor
     # get action probabilities by sending state through forward pass of network
@@ -53,12 +53,12 @@ class Policy(nn.Module):
     def params_init(self, state_size, n_hidden_units, action_size):
         weights = {
             '1': init.xavier_uniform_(nn.Parameter(torch.FloatTensor(state_size, n_hidden_units))),
-            '2': init.xavier_uniform_(nn.Parameter(torch.FloatTensor(n_hidden_units, action_size))),
+            '2': init.xavier_uniform_(nn.Parameter(torch.FloatTensor(n_hidden_units, n_hidden_units))),
             '3': init.xavier_uniform_(nn.Parameter(torch.FloatTensor(n_hidden_units, action_size)))
         }
         bias = {
             '1': nn.Parameter(torch.zeros([n_hidden_units])),
-            '2': nn.Parameter(torch.zeros([action_size])),
+            '2': nn.Parameter(torch.zeros([n_hidden_units])),
             '3': nn.Parameter(torch.zeros([action_size]))
         }
         return weights, bias
@@ -122,27 +122,27 @@ def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lea
         if np.mean(scores_deque)>=195.0 and solved is '':
             solved = 'Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(episode-100, np.mean(scores_deque))
 
-        lr_decay(opt, episode, lr_init)
+        # lr_decay(opt, episode, lr_init)
 
-    return scores
+    return scores, solved
 
 
-n_hidden_units = 16
+n_hidden_units = 128
 state_size = env.observation_space.shape[0]
-action_size = 3
+action_size = 1
 
-n_episodes = 1000
+n_episodes = 10000
 max_t = 1000
 gamma = 1.0
 print_every = 100
 
-learning_rate = 0.01
+learning_rate = 0.001
 
 
 r_net = Policy(n_hidden_units, state_size, action_size).to(device)
 opt = optim.Adam(r_net.parameters(), lr=learning_rate)
 
-scores = train(r_net, opt, n_episodes, max_t, gamma, print_every, learning_rate)
+scores, solved = train(r_net, opt, n_episodes, max_t, gamma, print_every, learning_rate)
 print(solved)
 
 fig = plt.figure()
