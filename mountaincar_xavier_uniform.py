@@ -119,15 +119,16 @@ def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lea
 
         if episode % print_every == 0:
             print('Episode {}\tAverage Score: {:.2f}'.format(episode, np.mean(scores_deque)))
-        if np.mean(scores_deque)>=195.0 and solved is '':
+        if np.mean(scores_deque)>=-100.0 and solved is '':
             solved = 'Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(episode-100, np.mean(scores_deque))
 
-        # lr_decay(opt, episode, lr_init)
+        if episode > 500:
+            lr_decay(opt, episode, lr_init)
 
     return scores, solved
 
 
-n_hidden_units = 128
+n_hidden_units = 64
 state_size = env.observation_space.shape[0]
 action_size = 1
 
@@ -136,7 +137,7 @@ max_t = 1000
 gamma = 1.0
 print_every = 100
 
-learning_rate = 0.001
+learning_rate = 0.2
 
 
 r_net = Policy(n_hidden_units, state_size, action_size).to(device)
