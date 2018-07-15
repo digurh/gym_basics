@@ -67,19 +67,17 @@ class Policy(nn.Module):
         return F.relu(X)
 
 # cosine annealing, modified to run over episodes and steps
-def cosine_decay(opt, lr_min, lr_max, gs, ds=1000):
+def cosine_decay(opt, lr_max, lr_min, gs, ds=1000):
     lr = lr_min + 0.5 * (lr_max - lr_min) * (1 + np.cos((gs / ds) * np.pi))
     for param_group in opt.param_groups:
         param_group['lr'] = lr
 
 
-def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lr_max=0.1, lr_min=0.0001):
+def train(net, opt, sch=None, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lr_max=0.1, lr_min=0.0001):
     scores_deque = deque(maxlen=100)
     scores = []
 
     solved = ''
-
-    lr_init = learning_rate
 
     for episode in range(1, n_episodes+1):
         saved_log_probs = []
@@ -113,6 +111,8 @@ def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lr_
             policy_loss.append(-log_prob*Return)
         policy_loss = torch.cat(policy_loss).sum()
 
+        if sch is not None:
+            sch.step()
         opt.zero_grad()
         policy_loss.backward(retain_graph=True)
         opt.step()
@@ -122,7 +122,7 @@ def train(net, opt, n_episodes=1000, max_t=1000, gamma=1.0, print_every=100, lr_
         if np.mean(scores_deque)>=-100.0 and solved is '':
             solved = 'Environment solved in {:d} episodes!\tAverage Score: {:.2f}'.format(episode-100, np.mean(scores_deque))
 
-        cosine_decay(opt, lr_min, lr_max, episode, lr_init)
+        # cosine_decay(opt, lr_max, lr_min, episode)
 
     return scores, solved
 
@@ -132,17 +132,18 @@ state_size = env.observation_space.shape[0]
 action_size = 3
 
 n_episodes = 1000
-max_t = 1000
-gamma = 0.99
+max_t = 2000
+gamma = 1.0
 print_every = 100
 
-lr_max = 0.1
-lr_min = 0.0001
+lr_max = 0.0005
+lr_min = 0.00001
 
 r_net = Policy(n_hidden_units, state_size, action_size).to(device)
 opt = optim.Adam(r_net.parameters(), lr=lr_max)
+# sch = optim.lr_scheduler.ExponentialLR(opt, gamma)
 
-scores, solved = train(r_net, opt, n_episodes, max_t, gamma, print_every, lr_max, lr_min)
+scores, solved = train(r_net, opt, sch, n_episodes, max_t, gamma, print_every, lr_max, lr_min)
 print(solved)
 
 fig = plt.figure()
