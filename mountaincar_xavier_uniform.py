@@ -126,23 +126,23 @@ def train(net, opt, sch=None, n_episodes=1000, max_t=1000, gamma=1.0, print_ever
     return scores, solved
 
 
-n_hidden_units = 32
+n_hidden_units = 64
 state_size = env.observation_space.shape[0]
 action_size = 3
 
 n_episodes = 1000
-max_t = 1000
-gamma = 0.99
+max_t = 2000
+gamma = 1.0
 print_every = 100
 
-lr_max = 0.0006
+lr_max = 0.1
 lr_min = 0.000007
 
 
 r_net = Policy(n_hidden_units, state_size, action_size).to(device)
-opt = optim.Adam(r_net.parameters(), lr=learning_rate)
+opt = optim.Adam(r_net.parameters(), lr=lr_max)
 
-scores, solved = train(r_net, opt, n_episodes, max_t, gamma, print_every, learning_rate)
+scores, solved = train(r_net, opt, None, n_episodes, max_t, gamma, print_every, lr_max, lr_min)
 print(solved)
 
 fig = plt.figure()
